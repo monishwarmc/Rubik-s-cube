@@ -13,17 +13,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rubik's cube",
-  description: "33d interactive rubik's cube",
+  title: "Rubik&apos;s Cube",
+  description: "3D interactive Rubik&apos;s Cube",
+
+  icons: {
+    icon: "/rubiks.png",
+    shortcut: "/rubiks.png",
+    apple: "/rubiks.png",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+      </body>
     </html>
   );
 }
+
