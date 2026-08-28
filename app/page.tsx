@@ -8,7 +8,7 @@ import {
 
 import {
   Environment,
-  OrbitControls,
+  TrackballControls,
 } from "@react-three/drei";
 
 import {
@@ -38,6 +38,10 @@ interface ViewMapping {
   B: Face;
 }
 
+type MoveMode =
+  | "fixed"
+  | "view";
+
 
 /* =========================================================
    DEFAULT VIEW
@@ -60,32 +64,46 @@ const DEFAULT_MAPPING: ViewMapping = {
 function getClosestFace(
   direction: THREE.Vector3
 ): Face {
+
   const x =
-    Math.abs(direction.x);
+    Math.abs(
+      direction.x
+    );
 
   const y =
-    Math.abs(direction.y);
+    Math.abs(
+      direction.y
+    );
 
   const z =
-    Math.abs(direction.z);
+    Math.abs(
+      direction.z
+    );
+
 
   if (
     x >= y &&
     x >= z
   ) {
+
     return direction.x >= 0
       ? "R"
       : "L";
+
   }
+
 
   if (
     y >= x &&
     y >= z
   ) {
+
     return direction.y >= 0
       ? "U"
       : "D";
+
   }
+
 
   return direction.z >= 0
     ? "F"
@@ -96,7 +114,9 @@ function getClosestFace(
 function oppositeFace(
   face: Face
 ): Face {
+
   switch (face) {
+
     case "R":
       return "L";
 
@@ -114,6 +134,7 @@ function oppositeFace(
 
     case "B":
       return "F";
+
   }
 }
 
@@ -129,13 +150,22 @@ function CameraFaceDetector({
     mapping: ViewMapping
   ) => void;
 }) {
+
   const { camera } =
     useThree();
+
 
   const lastState =
     useRef("");
 
+
   useFrame(() => {
+
+    /*
+     * Camera local X axis
+     * expressed in world space.
+     */
+
     const cameraRight =
       new THREE.Vector3(
         1,
@@ -146,6 +176,11 @@ function CameraFaceDetector({
           camera.quaternion
         )
         .normalize();
+
+
+    /*
+     * Camera local Y axis.
+     */
 
     const cameraUp =
       new THREE.Vector3(
@@ -158,62 +193,96 @@ function CameraFaceDetector({
         )
         .normalize();
 
+
+    /*
+     * Camera forward direction.
+     */
+
     const cameraForward =
       new THREE.Vector3();
+
 
     camera.getWorldDirection(
       cameraForward
     );
+
+
+    /*
+     * Cube is opposite camera
+     * forward direction.
+     */
+
+    const frontDirection =
+      cameraForward
+        .clone()
+        .negate()
+        .normalize();
+
 
     const right =
       getClosestFace(
         cameraRight
       );
 
+
     const top =
       getClosestFace(
         cameraUp
       );
 
+
     const front =
       getClosestFace(
-        cameraForward.clone().negate()
+        frontDirection
       );
 
+
     const mapping: ViewMapping = {
+
       R: right,
+
       L: oppositeFace(
         right
       ),
 
       U: top,
+
       D: oppositeFace(
         top
       ),
 
       F: front,
+
       B: oppositeFace(
         front
       ),
+
     };
+
 
     const state =
       JSON.stringify(
         mapping
       );
 
+
     if (
       state !==
       lastState.current
     ) {
+
       lastState.current =
         state;
+
 
       onChange(
         mapping
       );
+
     }
+
   });
+
 
   return null;
 }
@@ -238,8 +307,12 @@ const BUTTONS: Face[] = [
 ========================================================= */
 
 export default function Home() {
+
   const rubiksRef =
-    useRef<RubiksHandle>(null);
+    useRef<RubiksHandle>(
+      null
+    );
+
 
   const [
     mapping,
@@ -249,17 +322,40 @@ export default function Home() {
       DEFAULT_MAPPING
     );
 
+
+  /*
+   * Fixed:
+   *
+   * R always means physical R.
+   *
+   * View:
+   *
+   * R follows camera-right face.
+   */
+
+  const [
+    moveMode,
+    setMoveMode,
+  ] =
+    useState<MoveMode>(
+      "fixed"
+    );
+
+
   const updateMapping =
     useCallback(
       (
         newMapping: ViewMapping
       ) => {
+
         setMapping(
           newMapping
         );
+
       },
       []
     );
+
 
   return (
     <main
@@ -285,6 +381,7 @@ export default function Home() {
           bg-[radial-gradient(circle_at_50%_45%,rgba(40,100,180,0.18),transparent_42%)]
         "
       />
+
 
       <div
         className="
@@ -314,6 +411,7 @@ export default function Home() {
           sm:top-7
         "
       >
+
         <div
           className="
             mb-1
@@ -322,6 +420,7 @@ export default function Home() {
             gap-2
           "
         >
+
           <div
             className="
               h-1.5
@@ -331,6 +430,7 @@ export default function Home() {
               shadow-[0_0_12px_rgba(52,211,153,.8)]
             "
           />
+
 
           <span
             className="
@@ -345,7 +445,9 @@ export default function Home() {
           >
             Interactive 3D
           </span>
+
         </div>
+
 
         <h1
           className="
@@ -358,6 +460,7 @@ export default function Home() {
         >
           Rubik&apos;s Cube
         </h1>
+
 
         <p
           className="
@@ -372,6 +475,7 @@ export default function Home() {
           Rotate the cube and solve it
           your way.
         </p>
+
       </header>
 
 
@@ -385,6 +489,7 @@ export default function Home() {
           inset-0
         "
       >
+
         <Canvas
           camera={{
             position: [
@@ -392,9 +497,14 @@ export default function Home() {
               4,
               5,
             ],
+
             fov: 45,
           }}
-          dpr={[1, 2]}
+
+          dpr={[
+            1,
+            2,
+          ]}
         >
 
           <color
@@ -404,9 +514,15 @@ export default function Home() {
             ]}
           />
 
+
+          {/* =================================================
+              LIGHTING
+          ================================================= */}
+
           <ambientLight
             intensity={0.5}
           />
+
 
           <directionalLight
             position={[
@@ -417,6 +533,7 @@ export default function Home() {
             intensity={2}
           />
 
+
           <directionalLight
             position={[
               -4,
@@ -426,19 +543,56 @@ export default function Home() {
             intensity={0.5}
           />
 
+
           <Environment
             preset="city"
           />
 
-          <OrbitControls
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={3.5}
-            maxDistance={10}
-            rotateSpeed={0.7}
-            zoomSpeed={0.8}
-            enablePan={false}
+
+          {/* =================================================
+              FULL 3D TRACKBALL
+          ================================================= */}
+
+          <TrackballControls
+            noPan
+
+            noRotate={
+              false
+            }
+
+            noZoom={
+              false
+            }
+
+            rotateSpeed={
+              3
+            }
+
+            zoomSpeed={
+              1.2
+            }
+
+            dynamicDampingFactor={
+              0.15
+            }
+
+            staticMoving={
+              false
+            }
+
+            minDistance={
+              3
+            }
+
+            maxDistance={
+              10
+            }
           />
+
+
+          {/* =================================================
+              CAMERA FACE DETECTOR
+          ================================================= */}
 
           <CameraFaceDetector
             onChange={
@@ -446,15 +600,23 @@ export default function Home() {
             }
           />
 
+
+          {/* =================================================
+              RESPONSIVE CUBE
+          ================================================= */}
+
           <ResponsiveCube>
+
             <Rubiks
               ref={
                 rubiksRef
               }
             />
+
           </ResponsiveCube>
 
         </Canvas>
+
       </div>
 
 
@@ -463,7 +625,18 @@ export default function Home() {
       ================================================= */}
 
       <DraggableMovePanel
-        mapping={mapping}
+        mapping={
+          mapping
+        }
+
+        moveMode={
+          moveMode
+        }
+
+        setMoveMode={
+          setMoveMode
+        }
+
         rubiksRef={
           rubiksRef
         }
@@ -482,7 +655,7 @@ export default function Home() {
           z-20
           flex
           flex-col
-          items-center
+          items-start
           gap-2
 
           sm:bottom-6
@@ -490,25 +663,37 @@ export default function Home() {
         "
       >
 
-        {/* GitHub */}
+        {/* =================================================
+            GITHUB
+        ================================================= */}
 
         <a
           href="https://github.com/monishwarmc?tab=repositories"
           target="_blank"
           rel="noopener noreferrer"
+
           className="
             flex
+            items-center
             gap-2
+
             rounded-lg
+
             border
             border-white/8
+
             bg-white/4
+
             px-3
             py-2
+
             text-[10px]
             font-medium
+
             text-white/50
+
             backdrop-blur-md
+
             transition
 
             hover:border-white/15
@@ -516,45 +701,62 @@ export default function Home() {
             hover:text-white
 
             active:scale-95
-            mr-16
           "
         >
+
           <svg
             viewBox="0 0 24 24"
+
             className="
               h-3.5
               w-3.5
               fill-current
             "
+
             aria-hidden="true"
           >
+
             <path
               d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.85 10.91.57.1.78-.25.78-.55v-2.13c-3.19.69-3.86-1.35-3.86-1.35-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.25 3.32.96.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .96-.31 3.14 1.18a10.9 10.9 0 0 1 5.72 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.59.23 2.77.11 3.06.73.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.67.41.36.77 1.07.77 2.16v3.2c0 .31.21.66.79.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
             />
+
           </svg>
 
+
           GitHub
+
         </a>
 
 
-        {/* Email */}
+        {/* =================================================
+            EMAIL
+        ================================================= */}
 
         <a
           href="mailto:monishwar369@gmail.com"
+
           className="
             flex
             items-center
             gap-2
+
             rounded-lg
+
             border
             border-white/8
+
             bg-white/4
+
             px-3
             py-2
+
             text-[10px]
             font-medium
+
             text-white/50
+
             backdrop-blur-md
+
             transition
 
             hover:border-white/15
@@ -564,17 +766,22 @@ export default function Home() {
             active:scale-95
           "
         >
+
           <svg
             viewBox="0 0 24 24"
+
             className="
               h-3.5
               w-3.5
               fill-none
               stroke-current
             "
+
             strokeWidth="1.8"
+
             aria-hidden="true"
           >
+
             <path
               d="M3 5.5h18v13H3z"
             />
@@ -582,9 +789,12 @@ export default function Home() {
             <path
               d="m3 6 9 7 9-7"
             />
+
           </svg>
 
+
           monishwar369@gmail.com
+
         </a>
 
       </div>
@@ -598,17 +808,43 @@ export default function Home() {
         className="
           pointer-events-none
           absolute
-          bottom-16
-          left-4
+          bottom-4
+          right-4
           z-10
+
           text-[9px]
           text-white/25
 
           sm:hidden
         "
       >
-        Drag cube to orbit ·
+        Drag to orbit ·
         Pinch to zoom
+      </div>
+
+
+      {/* =================================================
+          DESKTOP HELP
+      ================================================= */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          bottom-5
+          left-1/2
+          z-10
+
+          hidden
+          -translate-x-1/2
+
+          text-[10px]
+          text-white/20
+
+          sm:block
+        "
+      >
+        Drag to freely rotate · Scroll to zoom
       </div>
 
     </main>
@@ -622,23 +858,40 @@ export default function Home() {
 
 function DraggableMovePanel({
   mapping,
+  moveMode,
+  setMoveMode,
   rubiksRef,
 }: {
   mapping: ViewMapping;
+
+  moveMode: MoveMode;
+
+  setMoveMode: React.Dispatch<
+    React.SetStateAction<MoveMode>
+  >;
+
   rubiksRef: React.RefObject<
     RubiksHandle | null
   >;
 }) {
+
   const panelRef =
-    useRef<HTMLDivElement>(null);
+    useRef<HTMLDivElement>(
+      null
+    );
+
 
   const dragState =
     useRef({
       dragging: false,
+
       pointerId: -1,
+
       offsetX: 0,
+
       offsetY: 0,
     });
+
 
   const [
     position,
@@ -657,17 +910,22 @@ function DraggableMovePanel({
   function handlePointerDown(
     event: React.PointerEvent
   ) {
+
     const panel =
       panelRef.current;
+
 
     if (!panel) {
       return;
     }
 
+
     const rect =
       panel.getBoundingClientRect();
 
+
     dragState.current = {
+
       dragging: true,
 
       pointerId:
@@ -680,11 +938,14 @@ function DraggableMovePanel({
       offsetY:
         event.clientY -
         rect.top,
+
     };
+
 
     event.currentTarget.setPointerCapture(
       event.pointerId
     );
+
   }
 
 
@@ -695,8 +956,10 @@ function DraggableMovePanel({
   function handlePointerMove(
     event: React.PointerEvent
   ) {
+
     const drag =
       dragState.current;
+
 
     if (
       !drag.dragging ||
@@ -706,57 +969,73 @@ function DraggableMovePanel({
       return;
     }
 
+
     const panel =
       panelRef.current;
+
 
     if (!panel) {
       return;
     }
 
+
     const width =
       window.innerWidth;
+
 
     const height =
       window.innerHeight;
 
+
     const panelWidth =
       panel.offsetWidth;
 
+
     const panelHeight =
       panel.offsetHeight;
+
 
     let x =
       event.clientX -
       drag.offsetX;
 
+
     let y =
       event.clientY -
       drag.offsetY;
 
+
     x = Math.max(
       8,
+
       Math.min(
         x,
+
         width -
           panelWidth -
           8
       )
     );
 
+
     y = Math.max(
       8,
+
       Math.min(
         y,
+
         height -
           panelHeight -
           8
       )
     );
 
+
     setPosition({
       x,
       y,
     });
+
   }
 
 
@@ -767,51 +1046,78 @@ function DraggableMovePanel({
   function handlePointerUp(
     event: React.PointerEvent
   ) {
+
     if (
       dragState.current
         .pointerId ===
       event.pointerId
     ) {
+
       dragState.current.dragging =
         false;
 
-      event.currentTarget.releasePointerCapture(
-        event.pointerId
-      );
+
+      if (
+        event.currentTarget.hasPointerCapture(
+          event.pointerId
+        )
+      ) {
+
+        event.currentTarget.releasePointerCapture(
+          event.pointerId
+        );
+
+      }
+
     }
+
   }
 
 
   return (
     <section
-      ref={panelRef}
+      ref={
+        panelRef
+      }
+
       style={
         position
           ? {
+
               left:
                 position.x,
+
               top:
                 position.y,
+
               right:
                 "auto",
+
               bottom:
                 "auto",
+
             }
           : undefined
       }
+
       className="
         absolute
+
         bottom-4
         right-4
+
         z-30
 
         w-[min(290px,calc(100%-2rem))]
 
         overflow-hidden
+
         rounded-2xl
+
         border
         border-white/10
-        bg-[#0b111c]/80
+
+        bg-[#0b111c]/85
 
         shadow-[0_20px_70px_rgba(0,0,0,.45)]
 
@@ -831,23 +1137,30 @@ function DraggableMovePanel({
         onPointerDown={
           handlePointerDown
         }
+
         onPointerMove={
           handlePointerMove
         }
+
         onPointerUp={
           handlePointerUp
         }
+
         onPointerCancel={
           handlePointerUp
         }
+
         className="
           flex
           cursor-grab
           touch-none
+          select-none
           items-center
           justify-between
+
           border-b
           border-white/8
+
           px-4
           py-3
 
@@ -856,6 +1169,7 @@ function DraggableMovePanel({
       >
 
         <div>
+
           <div
             className="
               text-xs
@@ -866,6 +1180,7 @@ function DraggableMovePanel({
             Move Cube
           </div>
 
+
           <div
             className="
               mt-0.5
@@ -873,8 +1188,9 @@ function DraggableMovePanel({
               text-white/30
             "
           >
-            Drag panel to move
+            Choose move direction
           </div>
+
         </div>
 
 
@@ -888,12 +1204,17 @@ function DraggableMovePanel({
             opacity-30
           "
         >
+
           {Array.from({
             length: 6,
           }).map(
             (_, index) => (
+
               <span
-                key={index}
+                key={
+                  index
+                }
+
                 className="
                   h-1
                   w-1
@@ -901,8 +1222,148 @@ function DraggableMovePanel({
                   bg-white
                 "
               />
+
             )
           )}
+
+        </div>
+
+      </div>
+
+
+      {/* =================================================
+          MOVE MODE
+      ================================================= */}
+
+      <div
+        className="
+          p-3
+          pb-0
+        "
+      >
+
+        <div
+          className="
+            rounded-xl
+            border
+            border-white/8
+            bg-black/20
+            p-1
+          "
+        >
+
+          <div
+            className="
+              mb-1.5
+              px-2
+              pt-1
+              text-[9px]
+              font-medium
+              uppercase
+              tracking-wider
+              text-white/30
+            "
+          >
+            Move direction
+          </div>
+
+
+          <div
+            className="
+              grid
+              grid-cols-2
+              gap-1
+            "
+          >
+
+            {/* Fixed */}
+
+            <button
+              type="button"
+
+              onClick={() =>
+                setMoveMode(
+                  "fixed"
+                )
+              }
+
+              className={`
+                rounded-lg
+                px-2
+                py-2
+                text-[10px]
+                font-semibold
+                transition
+
+                ${
+                  moveMode ===
+                  "fixed"
+
+                    ? "bg-white/12 text-white shadow-sm"
+
+                    : "text-white/35 hover:bg-white/6 hover:text-white/70"
+                }
+              `}
+            >
+              Fixed
+            </button>
+
+
+            {/* Camera */}
+
+            <button
+              type="button"
+
+              onClick={() =>
+                setMoveMode(
+                  "view"
+                )
+              }
+
+              className={`
+                rounded-lg
+                px-2
+                py-2
+                text-[10px]
+                font-semibold
+                transition
+
+                ${
+                  moveMode ===
+                  "view"
+
+                    ? "bg-white/12 text-white shadow-sm"
+
+                    : "text-white/35 hover:bg-white/6 hover:text-white/70"
+                }
+              `}
+            >
+              Camera
+            </button>
+
+          </div>
+
+
+          <div
+            className="
+              px-2
+              py-1.5
+              text-[9px]
+              leading-relaxed
+              text-white/25
+            "
+          >
+
+            {moveMode ===
+            "fixed"
+
+              ? "R, L, U, D, F, B stay on the same cube faces."
+
+              : "R, L, U, D, F, B follow your camera view."
+            }
+
+          </div>
+
         </div>
 
       </div>
@@ -925,91 +1386,137 @@ function DraggableMovePanel({
             gap-2
           "
         >
+
           {BUTTONS.map(
-            (button) => {
+            button => {
+
+              /*
+               * Fixed mode:
+               *
+               * R -> physical R
+               *
+               * View mode:
+               *
+               * R -> camera mapped face
+               */
+
               const physicalFace =
-                mapping[
-                  button
-                ];
+                moveMode ===
+                "view"
+
+                  ? mapping[
+                      button
+                    ]
+
+                  : button;
+
 
               return (
                 <div
-                  key={button}
+                  key={
+                    button
+                  }
+
                   className="
                     flex
                     gap-1
                   "
                 >
 
-                  {/* Clockwise */}
+                  {/* =================================================
+                      CLOCKWISE
+                  ================================================= */}
 
                   <button
                     type="button"
+
                     onClick={() =>
                       rubiksRef.current?.move(
                         physicalFace,
                         false
                       )
                     }
+
                     className="
                       flex
                       h-10
                       flex-1
                       items-center
                       justify-center
+
                       rounded-lg
+
                       border
                       border-white/10
+
                       bg-white/8
+
                       text-sm
                       font-bold
                       text-white
+
                       transition
 
                       hover:bg-white/16
+
                       active:scale-95
                     "
                   >
-                    {button}
+                    {
+                      button
+                    }
                   </button>
 
 
-                  {/* Counter clockwise */}
+                  {/* =================================================
+                      COUNTER CLOCKWISE
+                  ================================================= */}
 
                   <button
                     type="button"
+
                     onClick={() =>
                       rubiksRef.current?.move(
                         physicalFace,
                         true
                       )
                     }
+
                     className="
                       flex
                       h-10
                       flex-1
                       items-center
                       justify-center
+
                       rounded-lg
+
                       border
                       border-white/10
+
                       bg-white/4
+
                       text-sm
                       font-bold
                       text-white/60
+
                       transition
 
                       hover:bg-white/12
+
                       active:scale-95
                     "
                   >
-                    {button}&apos;
+                    {
+                      button
+                    }&apos;
                   </button>
 
                 </div>
               );
             }
           )}
+
         </div>
 
 
@@ -1019,9 +1526,11 @@ function DraggableMovePanel({
 
         <button
           type="button"
+
           onClick={() =>
             rubiksRef.current?.reset()
           }
+
           className="
             mt-2
             flex
@@ -1029,13 +1538,18 @@ function DraggableMovePanel({
             w-full
             items-center
             justify-center
+
             rounded-lg
+
             border
             border-white/8
+
             bg-white/3
+
             text-[10px]
             font-medium
             text-white/50
+
             transition
 
             hover:bg-white/8
@@ -1063,18 +1577,25 @@ function ResponsiveCube({
 }: {
   children: React.ReactNode;
 }) {
+
   const { size } =
     useThree();
 
+
   const groupRef =
-    useRef<THREE.Group>(null);
+    useRef<THREE.Group>(
+      null
+    );
+
 
   useFrame(() => {
+
     if (
       !groupRef.current
     ) {
       return;
     }
+
 
     const dimension =
       Math.min(
@@ -1082,37 +1603,59 @@ function ResponsiveCube({
         size.height
       );
 
+
     let scale =
       1;
+
 
     if (
       dimension < 360
     ) {
-      scale = 0.55;
+
+      scale =
+        0.55;
+
     } else if (
       dimension < 480
     ) {
-      scale = 0.65;
+
+      scale =
+        0.65;
+
     } else if (
       dimension < 640
     ) {
-      scale = 0.75;
+
+      scale =
+        0.75;
+
     } else if (
       dimension < 900
     ) {
-      scale = 0.9;
+
+      scale =
+        0.9;
+
     } else {
-      scale = 1;
+
+      scale =
+        1;
+
     }
+
 
     groupRef.current.scale.setScalar(
       scale
     );
+
   });
+
 
   return (
     <group
-      ref={groupRef}
+      ref={
+        groupRef
+      }
     >
       {children}
     </group>
