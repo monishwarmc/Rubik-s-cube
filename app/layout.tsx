@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Three fiber tutorial",
-  description: "3d website tutorial",
+  title: "Rubik's cube",
+  description: "33d interactive rubik's cube",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
