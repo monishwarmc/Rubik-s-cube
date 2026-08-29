@@ -408,11 +408,7 @@ npm start
 
 # Deployment
 
-This project can be deployed as a standard Next.js application.
-
-For example, it can be deployed using Vercel.
-
-The production build should be tested locally before deployment:
+https://rubik-s-cube-one.vercel.app
 
 ```bash
 npm run build
