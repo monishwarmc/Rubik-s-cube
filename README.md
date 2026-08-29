@@ -7,7 +7,7 @@ The application lets you interact with a 3D Rubik's Cube directly in the browser
 ### Interactive Cube
 
 <p align="center">
-  <img src="./public/screenshots/demo.gif" width="600">
+  <img src="./public/screenshots/demo.gif" width="800">
 </p>
 
 ![Interactive Rubik's Cube](./public/screenshots/cube.png)
